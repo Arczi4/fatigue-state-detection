@@ -10,6 +10,12 @@ FONT_THICKNESS = 1
 TEXT_COLOR = (255, 0, 0)  # red
 ROI_COLOR = (0, 255, 0)
 
+roi = {
+    0: ((30, 40), (30, 20)),  # Right eye
+    1: ((30, 40), (30, 20)),  # Left eye
+    3: ((50, 40), (20, 50)),  # Mouth
+}
+
 
 def _normalized_to_pixel_coordinates(
     normalized_x: float, normalized_y: float, image_width: int,
@@ -27,22 +33,19 @@ def _normalized_to_pixel_coordinates(
     y_px = min(math.floor(normalized_y * image_height), image_height - 1)
     return x_px, y_px
 
-roi = {
-    0: ((30, 40), (30, 20)), # Right eye
-    1: ((30, 40), (30, 20)),
-    3: ((50, 40), (20, 50))
-}
 
-def visualize(image, detection_result) -> np.ndarray:
+def visualize(image, detection_result, keyponits=[0, 1, 3]) -> np.ndarray:
     """Draws bounding boxes and keypoints on the input image and return it.
     Args:
     image: The input RGB image.
     detection_result: The list of all "Detection" entities to be visualize.
+    keypoints: Default value set to right eye, left eye, mouth
     Returns:
     Image with bounding boxes.
     """
     annotated_image = image.copy()
     height, width, _ = image.shape
+    roi_to_return = []
     for detection in detection_result.detections:
         # Draw bounding_box
         bbox = detection.bounding_box
@@ -51,8 +54,6 @@ def visualize(image, detection_result) -> np.ndarray:
         cv2.rectangle(annotated_image, start_point, end_point, TEXT_COLOR, 3)
 
         # Draw keypoints
-        # right eye, left eye, mouth
-        keyponits = [0, 1, 3]
         for keypoint in keyponits:
             region = roi[keypoint]
             
@@ -60,8 +61,8 @@ def visualize(image, detection_result) -> np.ndarray:
             keypoint_px = _normalized_to_pixel_coordinates(point.x, point.y, width, height)
             start_point = (keypoint_px[0] - region[0][0], keypoint_px[1] - region[0][1])
             end_point = (keypoint_px[0] + region[1][0], keypoint_px[1] + region[1][1])
+            roi_to_return.append((start_point, end_point))
             cv2.rectangle(annotated_image, start_point, end_point, ROI_COLOR, 3)
-            # cv2.circle(annotated_image, keypoint_px, thickness, color, radius)
 
         # Draw label and score
         category = detection.categories[0]
@@ -73,4 +74,4 @@ def visualize(image, detection_result) -> np.ndarray:
         cv2.putText(annotated_image, result_text, text_location, cv2.FONT_HERSHEY_PLAIN,
                     FONT_SIZE, TEXT_COLOR, FONT_THICKNESS)
 
-    return annotated_image, detection
+    return annotated_image, roi_to_return
