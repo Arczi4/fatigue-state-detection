@@ -34,7 +34,7 @@ def _normalized_to_pixel_coordinates(
     return x_px, y_px
 
 
-def visualize(image, detection_result, keyponits=[0, 1, 3]) -> np.ndarray:
+def get_eye_mouth_roi(image, detection_result, keyponits=[0, 1, 3]) -> np.ndarray:
     """Draws bounding boxes and keypoints on the input image and return it.
     Args:
     image: The input RGB image.
