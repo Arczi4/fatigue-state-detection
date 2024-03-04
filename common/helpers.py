@@ -1,7 +1,8 @@
 from typing import Tuple, Union
 import math
 import cv2
-import numpy as np
+from typing import List, Union
+from common.constants import LEFT_EYE, MOUTH, RIGHT_EYE, ROI_MAPPER
 
 MARGIN = 10  # pixels
 ROW_SIZE = 10  # pixels
@@ -34,18 +35,18 @@ def _normalized_to_pixel_coordinates(
     return x_px, y_px
 
 
-def get_eye_mouth_roi(image, detection_result, keyponits=[0, 1, 3]) -> np.ndarray:
-    """Draws bounding boxes and keypoints on the input image and return it.
+def get_roi_from_image(image, detection_result, keyponits=[RIGHT_EYE, LEFT_EYE, MOUTH]) -> List[Union[list, dict]]:
+    """Get region of intrests specified in keypoints argument.
     Args:
     image: The input RGB image.
     detection_result: The list of all "Detection" entities to be visualize.
     keypoints: Default value set to right eye, left eye, mouth
     Returns:
-    Image with bounding boxes.
+    List of annotated image with boudning boxes and dict of ROI.
     """
     annotated_image = image.copy()
     height, width, _ = image.shape
-    roi_to_return = []
+    roi_to_return = {}
     for detection in detection_result.detections:
         # Draw bounding_box
         bbox = detection.bounding_box
@@ -55,13 +56,15 @@ def get_eye_mouth_roi(image, detection_result, keyponits=[0, 1, 3]) -> np.ndarra
 
         # Draw keypoints
         for keypoint in keyponits:
-            region = roi[keypoint]
+            # Map keypoint to it's integer representation to match the output from detector
+            keypoint_int = ROI_MAPPER[keypoint]
             
-            point = detection.keypoints[keypoint]
+            region = roi[keypoint_int]
+            point = detection.keypoints[keypoint_int]
             keypoint_px = _normalized_to_pixel_coordinates(point.x, point.y, width, height)
             start_point = (keypoint_px[0] - region[0][0], keypoint_px[1] - region[0][1])
             end_point = (keypoint_px[0] + region[1][0], keypoint_px[1] + region[1][1])
-            roi_to_return.append((start_point, end_point))
+            roi_to_return[keypoint] = ((start_point, end_point))
             cv2.rectangle(annotated_image, start_point, end_point, ROI_COLOR, 3)
 
         # Draw label and score
